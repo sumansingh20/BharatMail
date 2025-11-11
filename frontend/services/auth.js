@@ -1,4 +1,4 @@
-// Authentication service for handling login, logout, and token management
+// Authentication service for handling login, logout, and token management 
 class AuthService {
   constructor() {
     this.token = localStorage.getItem('authToken');
