@@ -1,3 +1,4 @@
+
 const db = require('../config/database');
 
 class ContactController {
