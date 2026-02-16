@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BhaMail - Professional Email Platform</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/responsive.css">
+    <link rel="stylesheet" href="styles/email-settings.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📧</text></svg>">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-form">
+            <div class="login-logo">
+                <span class="material-icons">mail</span>
+            </div>
+            <h2>BhaMail</h2>
+            <p class="login-subtitle">Professional Email Platform</p>
+            <form id="loginForm">
+                <div class="input-group">
+                    <input type="email" id="loginEmail" placeholder="Email address" value="demo@bhamail.com" required>
+                    <span class="input-line"></span>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="loginPassword" placeholder="Password" value="demo123" required>
+                    <span class="input-line"></span>
+                </div>
+                <button type="submit" class="login-btn">
+                    <span>Sign in</span>
+                    <div class="btn-loader hidden"></div>
+                </button>
+            </form>
+            <div class="login-footer">
+                <p>Demo: demo@bhamail.com / demo123</p>
+                <p>Experience the complete email platform</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Gmail App -->
+    <div id="mailApp" class="hidden">
+        <!-- Header -->
+        <header class="gmail-header">
+            <div class="header-left">
+                <button class="menu-btn" onclick="toggleSidebar()">
+                    <span class="material-icons">menu</span>
+                </button>
+                <div class="logo">
+                    <span class="material-icons">mail</span>
+                    <span class="logo-text">BhaMail</span>
+                </div>
+            </div>
+            
+            <div class="search-container">
+                <div class="search-bar">
+                    <span class="material-icons search-icon">search</span>
+                    <input type="text" id="searchInput" placeholder="Search mail">
+                    <div class="search-options">
+                        <button class="search-btn" onclick="toggleAdvancedSearch()" title="Show search options">
+                            <span class="material-icons">tune</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <button class="header-btn" title="Support" onclick="showHelp()">
+                    <span class="material-icons">help_outline</span>
+                </button>
+                <button class="header-btn" title="Settings" onclick="openSettings()">
+                    <span class="material-icons">settings</span>
+                </button>
+                <button class="header-btn" title="Google apps">
+                    <span class="material-icons">apps</span>
+                </button>
+                <div class="user-menu" onclick="toggleUserMenu()">
+                    <div class="user-avatar" id="userAvatar">D</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Container -->
+        <div class="main-container">
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <div class="compose-section">
+                    <button class="compose-btn" onclick="openCompose()">
+                        <span class="material-icons">edit</span>
+                        <span>Compose</span>
+                    </button>
+                </div>
+                
+                <nav class="sidebar-nav" id="sidebarNav">
+                    <!-- Navigation will be loaded dynamically -->
+                </nav>
+                
+                <div class="storage-info">
+                    <div class="storage-text">4.2 GB of 15 GB used</div>
+                    <div class="storage-bar">
+                        <div class="storage-used"></div>
+                    </div>
+                    <a href="#" class="storage-link">Manage storage</a>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <main class="content">
+                <!-- Advanced Search -->
+                <div id="advancedSearch" class="advanced-search hidden">
+                    <!-- Advanced search form will be loaded here -->
+                </div>
+                
+                <!-- Content Header -->
+                <div class="content-header">
+                    <div class="folder-info">
+                        <h1 class="folder-title" id="folderTitle">Inbox</h1>
+                        <div class="folder-count" id="folderCount"></div>
+                    </div>
+                    <div class="view-options">
+                        <button class="view-btn active" title="Default view">
+                            <span class="material-icons">inbox</span>
+                        </button>
+                        <button class="view-btn" title="Important markers">
+                            <span class="material-icons">label_important</span>
+                        </button>
+                        <button class="view-btn" title="Multiple inboxes">
+                            <span class="material-icons">view_module</span>
+                        </button>
+                        <button class="view-btn" title="Comfortable view">
+                            <span class="material-icons">view_agenda</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Toolbar -->
+                <div class="toolbar" id="toolbar">
+                    <!-- Toolbar will be loaded dynamically -->
+                </div>
+                
+                <!-- Email List -->
+                <div class="email-list-container">
+                    <div id="emailList" class="email-list">
+                        <!-- Emails will be loaded here -->
+                    </div>
+                    
+                    <!-- Loading indicator -->
+                    <div id="loadingIndicator" class="loading-indicator hidden">
+                        <div class="spinner"></div>
+                        <span>Loading emails...</span>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div id="pagination" class="pagination hidden">
+                        <!-- Pagination controls will be added here -->
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals Container -->
+    <div id="modalsContainer">
+        <!-- Compose Modal -->
+        <div id="composeModal" class="modal">
+            <!-- Compose form will be loaded here -->
+        </div>
+        
+        <!-- Email View Modal -->
+        <div id="emailModal" class="modal">
+            <!-- Email view will be loaded here -->
+        </div>
+        
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal">
+            <!-- Settings will be loaded here -->
+        </div>
+        
+        <!-- Labels Modal -->
+        <div id="labelsModal" class="modal">
+            <!-- Labels management will be loaded here -->
+        </div>
+        
+        <!-- Contacts Modal -->
+        <div id="contactsModal" class="modal">
+            <!-- Contacts will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notifications" class="notifications-container"></div>
+
+    <!-- Scripts -->
+    <script src="services/auth.js"></script>
+    <script src="services/email.js"></script>
+    <script src="utils/helpers.js"></script>
+    <script src="components/sidebar.js"></script>
+    <script src="components/email-list.js"></script>
+    <script src="components/email-viewer.js"></script>
+    <script src="components/compose-dialog.js"></script>
+    <script src="components/email-settings.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

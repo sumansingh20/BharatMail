@@ -1,0 +1,476 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bhamail
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bhamail-config
+  namespace: bhamail
+data:
+  NODE_ENV: "production"
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "bhamail"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  MINIO_ENDPOINT: "minio-service:9000"
+  OPENSEARCH_URL: "http://opensearch-service:9200"
+  SMTP_HOST: "mailhog-service"
+  SMTP_PORT: "1025"
+  API_BASE_URL: "https://api.bhamail.local"
+  WEB_BASE_URL: "https://bhamail.local"
+  DEFAULT_FROM_EMAIL: "noreply@bhamail.local"
+  DEFAULT_FROM_NAME: "BhaMail"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bhamail-secrets
+  namespace: bhamail
+type: Opaque
+data:
+  # Base64 encoded secrets
+  DB_PASSWORD: YmhhbWFpbDEyMw== # bhamail123
+  JWT_SECRET: eW91ci1zdXBlci1zZWNyZXQtand0LWtleS1jaGFuZ2UtaW4tcHJvZHVjdGlvbg==
+  JWT_REFRESH_SECRET: eW91ci1zdXBlci1zZWNyZXQtcmVmcmVzaC1rZXktY2hhbmdlLWluLXByb2R1Y3Rpb24=
+  MINIO_ACCESS_KEY: YmhhbWFpbA== # bhamail
+  MINIO_SECRET_KEY: YmhhbWFpbDEyMw== # bhamail123
+  ENCRYPTION_KEY: eW91ci0zMi1jaGFyYWN0ZXItZW5jcnlwdGlvbi1rZXktaGVyZQ==
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: bhamail
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: bhamail-config
+              key: DB_NAME
+        - name: POSTGRES_USER
+          value: "bhamail"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: bhamail-secrets
+              key: DB_PASSWORD
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: bhamail
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: bhamail
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: bhamail
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        command:
+        - redis-server
+        - --appendonly
+        - "yes"
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: redis-storage
+        persistentVolumeClaim:
+          claimName: redis-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: bhamail
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: bhamail
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: bhamail
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+      - name: minio
+        image: minio/minio:latest
+        env:
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: bhamail-secrets
+              key: MINIO_ACCESS_KEY
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: bhamail-secrets
+              key: MINIO_SECRET_KEY
+        ports:
+        - containerPort: 9000
+        - containerPort: 9001
+        command:
+        - server
+        - /data
+        - --console-address
+        - ":9001"
+        volumeMounts:
+        - name: minio-storage
+          mountPath: /data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: minio-storage
+        persistentVolumeClaim:
+          claimName: minio-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-service
+  namespace: bhamail
+spec:
+  selector:
+    app: minio
+  ports:
+  - name: api
+    port: 9000
+    targetPort: 9000
+  - name: console
+    port: 9001
+    targetPort: 9001
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pvc
+  namespace: bhamail
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opensearch
+  namespace: bhamail
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opensearch
+  template:
+    metadata:
+      labels:
+        app: opensearch
+    spec:
+      containers:
+      - name: opensearch
+        image: opensearchproject/opensearch:2
+        env:
+        - name: discovery.type
+          value: "single-node"
+        - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+          value: "Admin123!"
+        - name: OPENSEARCH_JAVA_OPTS
+          value: "-Xms512m -Xmx512m"
+        - name: bootstrap.memory_lock
+          value: "true"
+        - name: DISABLE_SECURITY_PLUGIN
+          value: "true"
+        ports:
+        - containerPort: 9200
+        - containerPort: 9600
+        volumeMounts:
+        - name: opensearch-storage
+          mountPath: /usr/share/opensearch/data
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "200m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+      volumes:
+      - name: opensearch-storage
+        persistentVolumeClaim:
+          claimName: opensearch-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch-service
+  namespace: bhamail
+spec:
+  selector:
+    app: opensearch
+  ports:
+  - name: http
+    port: 9200
+    targetPort: 9200
+  - name: performance
+    port: 9600
+    targetPort: 9600
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opensearch-pvc
+  namespace: bhamail
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bhamail-api
+  namespace: bhamail
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: bhamail-api
+  template:
+    metadata:
+      labels:
+        app: bhamail-api
+    spec:
+      containers:
+      - name: api
+        image: bhamail/api:latest
+        envFrom:
+        - configMapRef:
+            name: bhamail-config
+        - secretRef:
+            name: bhamail-secrets
+        ports:
+        - containerPort: 8000
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bhamail-api-service
+  namespace: bhamail
+spec:
+  selector:
+    app: bhamail-api
+  ports:
+  - port: 8000
+    targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bhamail-web
+  namespace: bhamail
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bhamail-web
+  template:
+    metadata:
+      labels:
+        app: bhamail-web
+    spec:
+      containers:
+      - name: web
+        image: bhamail/web:latest
+        ports:
+        - containerPort: 3000
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bhamail-web-service
+  namespace: bhamail
+spec:
+  selector:
+    app: bhamail-web
+  ports:
+  - port: 3000
+    targetPort: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bhamail-ingress
+  namespace: bhamail
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  tls:
+  - hosts:
+    - bhamail.local
+    - api.bhamail.local
+    secretName: bhamail-tls
+  rules:
+  - host: bhamail.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: bhamail-web-service
+            port:
+              number: 3000
+  - host: api.bhamail.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: bhamail-api-service
+            port:
+              number: 8000

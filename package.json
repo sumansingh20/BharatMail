@@ -1,0 +1,68 @@
+{
+  "name": "bhamail",
+  "version": "1.0.0",
+  "description": "Open source Gmail-like email service",
+  "scripts": {
+    "setup": "cd api && npm install && cd ../web && npm install",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "cd api && npm run dev",
+    "dev:web": "cd web && npm run dev",
+    "build": "cd api && npm run build && cd ../web && npm run build",
+    "start": "cd backend && node server.js",
+    "migrate": "cd api && npm run migrate",
+    "seed": "cd api && npm run seed",
+    "test": "npm run test:api && npm run test:web",
+    "test:api": "cd api && npm test",
+    "test:web": "cd web && npm test",
+    "test:e2e": "cd tests && npm test",
+    "test:load": "cd tests && npm run load",
+    "lint": "cd api && npm run lint && cd ../web && npm run lint",
+    "format": "cd api && npm run format && cd ../web && npm run format",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "k8s:deploy": "kubectl apply -f infra/k8s/",
+    "backup": "cd scripts && ./backup.sh",
+    "restore": "cd scripts && ./restore.sh"
+  },
+  "keywords": [
+    "email",
+    "gmail",
+    "open-source",
+    "typescript",
+    "react",
+    "nodejs"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "main": "dev-server.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "author": "",
+  "type": "commonjs",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
+    "better-sqlite3": "^12.2.0",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "imapflow": "^1.0.195",
+    "jsonwebtoken": "^9.0.2",
+    "mailparser": "^3.7.4",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "nodemailer": "^7.0.6",
+    "sqlite3": "^5.1.7"
+  }
+}
